@@ -1,11 +1,12 @@
 import styled, { css } from "styled-components";
-import { FaChevronDown, FaChevronUp, FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useSet } from "../../hooks/useSet";
 import { FilterContext } from "./FilterContext";
 import { useSort } from "../../hooks/useSort";
 import { useToggle } from "../../hooks/useToggle";
 import { HiMinus, HiPlus } from "react-icons/hi";
+import SortIcon from "../../components/SortIcon";
 
 interface DataFilterProps {
     column: string;
@@ -239,23 +240,11 @@ const DataFilter = ({
             <ValueSortWrapper>
                 <div onClick={() => { handleSortBy(0) }}>
                     Value
-                    {
-                        sortBy == 0 ?
-                            <FaSortUp /> :
-                            sortBy == 1 ?
-                                <FaSortDown /> :
-                                <FaSort />
-                    }
+                    <SortIcon up={0} down={1} value={sortBy}/>
                 </div>
                 <div onClick={() => { handleSortBy(1) }}>
                     Count(%)
-                    {
-                        sortBy == 2 ?
-                            <FaSortUp /> :
-                            sortBy == 3 ?
-                                <FaSortDown /> :
-                                <FaSort />
-                    }
+                    <SortIcon up={2} down={3} value={sortBy}/>
                 </div>
             </ValueSortWrapper>
             {
