@@ -2,10 +2,12 @@ import styled from "styled-components";
 import { SmallBackground } from "../../components/Background";
 import DataFilter from "./DataFilter";
 import { FilterContext } from "./FilterContext";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import DataElement from "./DataElement";
 import { tableData } from "../../../table";
 import { useSort } from "../../hooks/useSort";
+import SortIcon from "../../components/SortIcon";
+import { GSMData } from "../../types";
 
 const BackgroundInfo = styled.div`
     display: flex;
@@ -34,6 +36,9 @@ const FilterSection = styled.section`
     gap: ${({ theme }) => theme.size.sm};
     height: 100%;
     width: ${({theme}) => theme.size.xxxxl};
+    h1{
+        font-size: ${({theme}) => theme.fontSize.lg};
+    }
 `
 
 const DataSection = styled.section`
@@ -44,48 +49,28 @@ const DataSection = styled.section`
     &>*:nth-child(even){
         background-color: #EEEEEE;
     }
-    &>*:last-child{
-        /* border-bottom: 1px solid black; */
-    }
-    /* flex-direction: column; */
-    /* gap: ${({ theme }) => theme.size.sm}; */
 `
 
 const DataHeader = styled.section`
     display: table-row;
     border: 1px solid #AAA;
     border-bottom: 4px solid #AAA;
-    p{
+    div{
         display: table-cell;
         font-size: ${({ theme }) => theme.fontSize.md};
         font-weight: 700;
         padding: ${({ theme }) => theme.size.sm} ${({ theme }) => theme.size.xs};
         word-break: break-all;
+        &:hover{
+            cursor:pointer;
+            background-color: #E2E2E2;
+        }
+        svg{
+            padding-left: ${({theme}) => theme.size.xs};
+            padding-top: ${({theme}) => theme.size.xxs};
+        }
     }
 `
-
-// const DummyData: GSMData = {
-//     GSM_ID: "GSM1333370",
-//     GSE_ID: "GSE55280",
-//     disease: "IRI",
-//     tissue: "hippocampus",
-//     genotype: "NAG",
-//     replicate_num: "r1",
-//     age: "NAA",
-//     species: "MMU"
-// }
-
-// const LongestData: GSMData = {
-//     GSM_ID: "GSM8124172",
-//     GSE_ID: "GSE55280",
-//     disease: "DbCM",
-//     tissue: "peritoneal_macrophages",
-//     genotype: "LysM-Cre+R26-stop-EYFP/TGfbr2KO",
-//     replicate_num: "r1(Isoproterenol&Minocycline)",
-//     age: "NAA(adult)",
-//     species: "MMU"
-// }
-
 
 type DataFilterType = {
     column: string;
@@ -96,23 +81,18 @@ type DataFilterType = {
 const Data = () => {
     const { filter } = useContext(FilterContext)!;
 
-    const [DataList, _, setDataList] = useSort(tableData);
+    const [DataList, sortDataList, setDataList] = useSort(tableData);
 
     const OriginalData = tableData;
 
     useEffect(() => {
         const filterList = Object.entries(filter).filter(([_, value]) => value.size > 0);
-        const filteredList = OriginalData.filter((Data) => {
-            let flag = true
-            filterList.forEach(([column, valueSet]) => {
-                if(!valueSet.has(Data[column]))
-                    flag = false
+        const filterObj = Object.fromEntries(filterList);
+        const filteredList = OriginalData.filter(Data => {
+            return Object.keys(filterObj).every(key => {
+                return filterObj[key].has(Data[key]);
             })
-            return flag;
         })
-        console.log(filter);
-        console.log(filterList);
-        console.log(filteredList);
         setDataList([...filteredList])
     }, [filter]);
 
@@ -143,6 +123,31 @@ const Data = () => {
     delete DataFilterGroup["GSE_ID"]
     delete DataFilterGroup["GSM_ID"]
 
+    const [sortBy, setSortBy] = useState(0);
+    const sortList = ["GSM ID", "GSE ID", "Disease", "Tissue", "Genotype", "Replicate Number", "age", "species"]
+    const compareFuncList: ((a: GSMData, b: GSMData) => number)[] = [
+        (a, b) => a.GSM_ID > b.GSM_ID ? 1 : -1,
+        (a, b) => a.GSM_ID < b.GSM_ID ? 1 : -1,
+        (a, b) => a.GSE_ID > b.GSE_ID ? 1 : -1,
+        (a, b) => a.GSE_ID < b.GSE_ID ? 1 : -1,
+        (a, b) => a.disease > b.disease ? 1 : -1,
+        (a, b) => a.disease < b.disease ? 1 : -1,
+        (a, b) => a.tissue > b.tissue ? 1 : -1,
+        (a, b) => a.tissue < b.tissue ? 1 : -1,
+        (a, b) => a.genotype > b.genotype ? 1 : -1,
+        (a, b) => a.genotype < b.genotype ? 1 : -1,
+        (a, b) => a.replicate_num > b.replicate_num ? 1 : -1,
+        (a, b) => a.replicate_num < b.replicate_num ? 1 : -1,
+        (a, b) => a.age > b.age ? 1 : -1,
+        (a, b) => a.age < b.age ? 1 : -1,
+        (a, b) => a.species > b.species ? 1 : -1,
+        (a, b) => a.species < b.species ? 1 : -1
+    ]
+
+    useEffect(() => {
+        sortDataList(compareFuncList[sortBy]);
+    }, [sortBy])
+
     return (
         <>
             <SmallBackground>
@@ -157,6 +162,9 @@ const Data = () => {
             </SmallBackground>
             <DataLayout>
                     <FilterSection> 
+                        <h1>
+                            Filter
+                        </h1>
                         {Object.entries(DataFilterGroup).map(([_, value]) => {
                             return(
                                 <DataFilter key={value.column} {...value} />
@@ -165,30 +173,14 @@ const Data = () => {
                     </FilterSection>
                 <DataSection>
                     <DataHeader>
-                        <p>
-                            GSM ID
-                        </p>
-                        <p>
-                            GSE ID
-                        </p>
-                        <p>
-                            Disease
-                        </p>
-                        <p>
-                            Tissue
-                        </p>
-                        <p>
-                            Genotype
-                        </p>
-                        <p>
-                            Replicate Number
-                        </p>
-                        <p>
-                            age
-                        </p>
-                        <p>
-                            species
-                        </p>
+                        {sortList.map((value, index) => {
+                            return(
+                                <div onClick={() => {setSortBy(index*2+((sortBy==index*2)?1:0))}}>
+                                    {value}
+                                    <SortIcon up={index*2} down={index*2+1} value={sortBy} />
+                                </div>
+                            )
+                        })}
                     </DataHeader>
                     {DataList.map((table) => {
                         return(
